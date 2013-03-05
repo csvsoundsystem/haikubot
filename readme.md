@@ -1,6 +1,6 @@
 ![haikubot](haikubot.png) [@ohhaikubot](http://www.twitter.com/ohhaikubot)
 ========================
-### Generate a haikubot on twitter.
+### Generate a haiku bot on twitter.
 -------------------------------------
 Set this script up on a ec2 by first downloading the script into the default user directory:
 ```
