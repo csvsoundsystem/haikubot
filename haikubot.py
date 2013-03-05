@@ -7,9 +7,13 @@ import string
 
 
 """
-set this script up on a ec2 crontab by first downloading the script:
+set this script up on a ec2 by first downloading the script:
 
-sudo crontab -u ec2-user -e
+$ wget http://raw.github.com/csvsoundsystem/haikubot/master/haikubot.py
+
+then create a cronjob by entering:
+
+$ sudo crontab -u ec2-user -e
 
 and then in vi insert:
 
