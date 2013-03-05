@@ -13,7 +13,7 @@ sudo crontab -u ec2-user -e
 
 and then in vi insert:
 
-*/30 * * * * /usr/bin/python /home/ec2-user/haiku.py
+*/30 * * * * /usr/bin/python /home/ec2-user/haikubot.py
 
 this will run the haikubot every half hour,
 
