@@ -30,6 +30,9 @@ each spaced apart by 5 minutes.
 d = cmudict.dict()
 
 # initialize twitter api connection
+# get these keys from dev.twitter.com/apps
+# make sure the account has read and write access turned on
+
 consumer_key = "xxxxxxxxxxxxxxx"
 consumer_secret = "xxxxxxxxxxxxxxx"
 access_token = "xxxxxxxxxxxxxxx"
