@@ -13,11 +13,11 @@ sudo crontab -u ec2-user -e
 
 and then in vi insert:
 
-00 * * * * /usr/bin/python /home/ec2-user/haikubot.py
+*/30 * * * * /usr/bin/python /home/ec2-user/haiku.py
 
-this will run the haikubot every hour,
+this will run the haikubot every half hour,
 
-the script will send out no more than 10 haikus every hour,
+the script will send out no more than 5 haikus every job,
 each spaced apart by 5 minutes.
 """
 
@@ -133,7 +133,6 @@ def format_haiku(haiku_dict, user, tweet_id):
 
 Here's where the haiku bot starts!
 
-
 """
 
 
@@ -156,8 +155,8 @@ for tweet in tweets:
 
 haikus = remove_duplicates(haikus)
 
-if len(haikus)>10:
-    haikus = haikus[0:11]
+if len(haikus) > 5:
+    haikus = haikus[0:6]
 
 for haiku in haikus:
     try:
