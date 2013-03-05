@@ -7,7 +7,7 @@ import string
 
 
 """
-set this script up on a ec2 crontab by entering the following:
+set this script up on a ec2 crontab by first downloading the script:
 
 sudo crontab -u ec2-user -e
 
