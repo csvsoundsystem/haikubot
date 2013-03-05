@@ -1,3 +1,3 @@
-![haikubot](haikubot.png) # @ohhaikubot
+![haikubot](haikubot.png) # [@ohhaikubot](http://www.twitter.com/ohhaikubot)
 ========================
-This is code for generating a haikubot on twitter.  The account can be found [here](http://www.twitter.com/ohhaikubot)
+This is the code for generating a haikubot on twitter.
