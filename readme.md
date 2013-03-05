@@ -21,6 +21,7 @@ nltk.download()
 ```
 This will open a prompt to install `nltk` add-ons.  Select `cmudict` and download it.
 <br/>
+<br/>
 Exit python and create a cronjob by entering:
 ```
 sudo crontab -u ec2-user -e
@@ -31,4 +32,5 @@ This will open a vi screen where you'll insert:
 ```
 Exit this screen and save the cron job by pressing `ZZ`
 <br/>
-The script will send out no more than 5 haikus every half-hour,each spaced apart by 5 minutes.
+<br/>
+The script will send out no more than 5 haikus every half-hour, each spaced apart by 5 minutes.
