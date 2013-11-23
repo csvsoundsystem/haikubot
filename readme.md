@@ -101,4 +101,5 @@ hb = HaikuBot(
   twt_access_token_secret = xxxxxxxx,
   words = nltk.corpus.stopwords.words('english') # a list of arbitrary words, here we're using stopwords from nltk
 )
+hb.go()
 ```
