@@ -114,14 +114,22 @@ class HaikuBot(object):
     def number_of_syllables(self, word):
         return [len(list(y for y in x if y[-1].isdigit())) for x in self.cmu[word]]
 
+    def remove_urls(self, string):
+        pattern = r'((http|ftp|https):\/\/)?[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?'
+        return re.sub(pattern, ' ', string)
+
     def detect_potential_haiku(self, tweet):
         tweet = tweet.encode('utf-8')
 
+        # remove urls
+        tweet = self.remove_urls(tweet)
+        
         # ignore tweets with @s, RT's and MT's and numbers greater than 3 digits
         if re.search(r'@|#|MT|RT|[0-9]{3,}', tweet):
             return None
 
-        tweet = re.sub("&", "and", tweet)
+        # swap ampersand with and
+        tweet = re.sub("&", " and ", tweet)
 
         # remove punctuation
         tweet = tweet.translate(string.maketrans("",""), string.punctuation)
@@ -131,7 +139,7 @@ class HaikuBot(object):
         tweet = tweet.lower()
 
         # split tweet into a list of words
-        words = [w.strip() for w in tweet.split()]
+        words = [w.strip() for w in tweet.split() if w != '']
 
         # replace numbers with words
         words = [self.n2w[int(w)] if re.search(r"0-9+", w) else w for w in words]
@@ -232,11 +240,18 @@ class HaikuBot(object):
 
         elif self.twt_list_slug is not None and self.twt_list_owner is not None:
             print "searching twitter list %s..." % self.twt_list_slug
-            tweets = self.twt_api.list_timeline(
-                owner_screen_name = self.twt_list_owner, 
-                slug =  self.twt_list_slug,
-                count = 200
-            )
+            tweets = []
+            for page in range(1,10):
+                tweet_list = self.twt_api.list_timeline(
+                    owner_screen_name = self.twt_list_owner, 
+                    slug =  self.twt_list_slug,
+                    count = 200,
+                    page = page
+                )
+                tweets.extend(tweet_list)
+
+            tweet_texts = set([t.text for t in tweets])
+            print len(tweet_texts), "tweets"
 
         else:
             raise("YOU MUST INCLUDE A LIST OF WORDS OR A TWITTER LIST TO FOLLOW!")
@@ -279,7 +294,7 @@ class HaikuBot(object):
                 print e
             time.sleep(2)
 
-    def run(self):
+    def go(self):
 
         # find some tweets
         tweets = self.fetch_new_tweets()
@@ -292,10 +307,15 @@ class HaikuBot(object):
             self.post_tweets(haikus)
 
 if __name__ == '__main__':
+    # list
     hb = HaikuBot(
-        config = "../haikubot.yml",
-        words = nltk.corpus.stopwords.words('english'),
-        n_words = 50
+        config = "../haikubot.yml"
     )
-    hb.run()
+    # # words
+    # hb = HaikuBot(
+    #     config = "../haikubot.yml",
+    #     words = nltk.corpus.stopwords.words('english'),
+    #     n_words = 50
+    # )
+    hb.go()
     
