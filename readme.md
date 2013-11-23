@@ -1,40 +1,105 @@
-![haikubot](haikubot.png) [@ohhaikubot](http://www.twitter.com/ohhaikubot)
-========================
--------------------------------------
-# Generate a haiku bot on twitter.
--------------------------------------
-Set this script up on an EC2 by first downloading the script into the default user directory:
+HaikuBot
+==========
+Generate a haiku bot that posts to twitter and tumblr.
+
+## dependencies
 ```
-wget http://raw.github.com/csvsoundsystem/haikubot/master/haikubot.py
+git clone https://github.com/tumblr/pytumblr.git
+cd pytumblr
+sudo python setup.py install 
 ```
-Install pip:
 ```
-sudo easy_install pip
+git clone https://github.com/tweepy/tweepy.git
+cd tweepy
+sudo python setup.py install 
 ```
-Install python dependencies:
 ```
-sudo pip install tweepy nltk 
+sudo pip install nltk
 ```
-Open up a python shell and run:
+```
+python
+>>> import nltk
+>>> nltk.download()
+>>> # select "cmudict" and "stopwords"
+```
+
+## install
+```
+git clone https://github.com/abelsonlive/haiku-bot.git
+cd haiku-bot && sudo python setup.py install
+```
+
+## run 
+### With a config file
+#### config:
+`haiku-bot.yml`:
+```
+tmbl_blog : <your haikubots tumblr account>
+tmbl_consumer_key : xxxxxxxx
+tmbl_consumer_secret : xxxxxxxx
+tmbl_oauth_token : xxxxxxxx
+tmbl_oauth_token_secret : xxxxxxxx
+twt_consumer_key : xxxxxxxx
+twt_consumer_secret : xxxxxxxx
+twt_access_token : xxxxxxxx
+twt_access_token_secret : xxxxxxxx
+twt_list_slug : members-of-congress # optionally follow a twitter list
+twt_list_owner : cspan # optionally follow a twitter list
+```
+#### twitter list search w/ config
+```
+from haiku_bot import HaikuBot
+
+hb = HaikuBot(config="haiku-bot.yml")
+hb.run()
+```
+
+#### twitter word search w/ config
 ```
 import nltk
-nltk.download()
-```
-This will open a prompt to install `nltk` add-ons.  Select `cmudict` and download it.
-<br/>
-<br/>
-Exit python and create a cronjob by entering:
-```
-sudo crontab -u ec2-user -e
-```
-This will open a vi screen where you'll insert:
-```
-*/30 * * * * /usr/bin/python /home/ec2-user/haikubot.py
-```
-Exit this screen and save the cron job by pressing `ZZ`
-<br/>
-<br/>
-The script will send out no more than 5 haikus every half-hour, each spaced apart by 5 minutes.
+from haiku_bot import HaikuBot
 
-## License
-<a rel="license" href="http://creativecommons.org/licenses/by/3.0/deed.en_US"><img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by/3.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by/3.0/deed.en_US">Creative Commons Attribution 3.0 Unported License</a>.
+hb = HaikuBot(
+  config="haiku-bot.yml"
+  words = nltk.corpus.stopwords.words('english') # a list of arbitrary words, here we're using stopwords from nltk
+  )
+hb.run()
+```
+### Without a Config File
+#### twitter list search w/o config
+```
+from haiku_bot import HaikuBot
+
+hb = HaikuBot(
+  tmbl_blog = <your haikubots tumblr account>,
+  tmbl_consumer_key = xxxxxxxx,
+  tmbl_consumer_secret = xxxxxxxx,
+  tmbl_oauth_token = xxxxxxxx,
+  tmbl_oauth_token_secret = xxxxxxxx,
+  twt_consumer_key = xxxxxxxx,
+  twt_consumer_secret = xxxxxxxx,
+  twt_access_token = xxxxxxxx,
+  twt_access_token_secret = xxxxxxxx,
+  twt_list_slug = members-of-congress # optionally follow a twitter list,
+  twt_list_owner = cspan # optionally follow a twitter list,
+)
+hb.run()
+```
+#### twitter word search w/o config
+```
+import nltk
+from haiku_bot import HaikuBot
+
+hb = HaikuBot(
+  tmbl_blog = <your haikubots tumblr account>,
+  tmbl_consumer_key = xxxxxxxx,
+  tmbl_consumer_secret = xxxxxxxx,
+  tmbl_oauth_token = xxxxxxxx,
+  tmbl_oauth_token_secret = xxxxxxxx,
+  twt_consumer_key = xxxxxxxx,
+  twt_consumer_secret = xxxxxxxx,
+  twt_access_token = xxxxxxxx,
+  twt_access_token_secret = xxxxxxxx,
+  words = nltk.corpus.stopwords.words('english') # a list of arbitrary words, here we're using stopwords from nltk
+)
+```

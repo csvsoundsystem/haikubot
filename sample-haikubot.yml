@@ -1,0 +1,11 @@
+tmbl_blog : <your haikubots tumblr account>
+tmbl_consumer_key : xxxxxxxx
+tmbl_consumer_secret : xxxxxxxx
+tmbl_oauth_token : xxxxxxxx
+tmbl_oauth_token_secret : xxxxxxxx
+twt_consumer_key : xxxxxxxx
+twt_consumer_secret : xxxxxxxx
+twt_access_token : xxxxxxxx
+twt_access_token_secret : xxxxxxxx
+twt_list_slug : members-of-congress # optionally follow a twitter list
+twt_list_owner : cspan # optionally follow a twitter list

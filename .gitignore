@@ -1,0 +1,8 @@
+build/
+dist/
+haikubot.yml
+profanity.txt
+*.egg-info/
+.DS_Store
+*/.DS_Store
+*/*.pyc
