@@ -30,8 +30,8 @@ class HaikuBot(object):
     self.words = words
     self.n_words = n_words if n_words is not None else 90
 
-    # number to word lookup
-    self.n2w = self.gen_n2w()
+ 
+    self.n2w = self.gen_n2w
 
     # syllable dict
     self.cmu = cmudict.dict()
@@ -112,250 +112,251 @@ class HaikuBot(object):
     self.tmbl_api = self.connect_to_tumblr()
     self.twt_api = self.connect_to_twitter()
 
-    def connect_to_tumblr(self):
-      c = self.tmbl_config
-      return pytumblr.TumblrRestClient(c['ck'], c['cs'], c['ot'], c['ots'])
+  def connect_to_tumblr(self):
+    c = self.tmbl_config
+    return pytumblr.TumblrRestClient(c['ck'], c['cs'], c['ot'], c['ots'])
 
-    def connect_to_twitter(self):
-      c = self.twt_config
-      auth = tweepy.OAuthHandler(c['ck'], c['cs'])
-      auth.set_access_token(c['at'], c['ats'])
-      return tweepy.API(auth)
+  def connect_to_twitter(self):
+    c = self.twt_config
+    auth = tweepy.OAuthHandler(c['ck'], c['cs'])
+    auth.set_access_token(c['at'], c['ats'])
+    return tweepy.API(auth)
 
-    def gen_n2w(self):
-      # generate number lookup for 0 - 99
-      n2w = "zero one two three four five six seven eight nine".split()
-      n2w.extend("ten eleven twelve thirteen fourteen fifteen sixteen".split())
-      n2w.extend("seventeen eighteen nineteen".split())
-      n2w.extend(tens if ones == "zero" else (tens + " " + ones) 
-          for tens in "twenty thirty forty fifty sixty seventy eighty ninety".split()
-          for ones in n2w[0:10])
-      return n2w
+  def gen_n2w(self):
+    # number to word lookup
+    # generate number lookup for 0 - 99
+    n2w = "zero one two three four five six seven eight nine".split()
+    n2w.extend("ten eleven twelve thirteen fourteen fifteen sixteen".split())
+    n2w.extend("seventeen eighteen nineteen".split())
+    n2w.extend(tens if ones == "zero" else (tens + " " + ones) 
+      for tens in "twenty thirty forty fifty sixty seventy eighty ninety".split()
+      for ones in n2w[0:10])
 
-    def number_of_syllables(self, word):
-      return [len(list(y for y in x if y[-1].isdigit())) for x in self.cmu[word]]
+  def number_of_syllables(self, word):
+    return [len(list(y for y in x if y[-1].isdigit())) for x in self.cmu[word]]
 
-    def remove_urls(self, string):
-      pattern = r'((http|ftp|https):\/\/)?[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?'
-      return re.sub(pattern, ' ', string)
+  def remove_urls(self, string):
+    pattern = r'((http|ftp|https):\/\/)?[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?'
+    return re.sub(pattern, ' ', string)
 
-    def detect_potential_haiku(self, tweet):
-      tweet = tweet.encode('utf-8')
+  def detect_potential_haiku(self, tweet):
+    tweet = tweet.encode('utf-8')
 
-      # remove urls
-      tweet = self.remove_urls(tweet)
-      
-      # ignore tweets with @s, RT's and MT's and numbers greater than 3 digits
-      if re.search(r'@|#|MT|RT|[0-9]{3,}', tweet):
+    # remove urls
+    tweet = self.remove_urls(tweet)
+    
+    # ignore tweets with @s, RT's and MT's and numbers greater than 3 digits
+    if re.search(r'@|#|MT|RT|[0-9]{3,}', tweet):
+      return None
+
+    # swap ampersand with and
+    tweet = re.sub("&", " and ", tweet)
+
+    # remove punctuation
+    tweet = tweet.translate(string.maketrans("",""), string.punctuation)
+
+    # strip and lower text
+    tweet = tweet.strip()
+    tweet = tweet.lower()
+
+    # split tweet into a list of words
+    words = [w.strip() for w in tweet.split() if w != '']
+
+    # replace numbers with words
+    words = [self.n2w[int(w)] if re.search(r"0-9+", w) else w for w in words]
+
+    # detect suitable tweets, annotate words with each words' number of syllables
+    n_syllables = []
+    clean_words = []
+
+    for word in words:
+      try:
+        n_syllable = self.number_of_syllables(word)[0]
+      except KeyError:
         return None
+      if n_syllable > 7:
+        return None
+      else:
+        n_syllables.append(n_syllable)
+        clean_words.append(word.strip().lower())
 
-      # swap ampersand with and
-      tweet = re.sub("&", " and ", tweet)
+    # remove tweekus that are really long
+    clean_tweet = ' '.join(clean_words)
+    if len(clean_tweet) > 125:
+      return None
 
-      # remove punctuation
-      tweet = tweet.translate(string.maketrans("",""), string.punctuation)
+    # make sure tweets have the proper number of syllables
+    total_syllables = sum(n_syllables)
+    if total_syllables == 17:
+      return {"words" : clean_words, "syllables" : n_syllables }
+    else:
+      return None
 
-      # strip and lower text
-      tweet = tweet.strip()
-      tweet = tweet.lower()
+  def is_proper_haiku(self, haiku_dict):
+    words = haiku_dict['words']
+    syllables = haiku_dict['syllables']
 
-      # split tweet into a list of words
-      words = [w.strip() for w in tweet.split() if w != '']
+    # make sure lines break at 5 and 12
+    syllable_cum_sum = []
+    syllables_so_far = 0
+    for syllable in syllables:
+      syllables_so_far += syllable
+      syllable_cum_sum.append(syllables_so_far)
+    if 5 in syllable_cum_sum and 12 in syllable_cum_sum:
+      return True
+    else:
+      return False
 
-      # replace numbers with words
-      words = [self.n2w[int(w)] if re.search(r"0-9+", w) else w for w in words]
+  def format_haiku(self, haiku_dict):
+    words = haiku_dict['words']
+    syllables = haiku_dict['syllables']
+    syllable_count = 0
+    haiku = ''
+    for i, word in enumerate(words):
+      if syllable_count == 5:
+        haiku += "\r\n"
+      if syllable_count == 12:
+        haiku += "\r\n"
+      syllable_count += syllables[i]
+      haiku += word.strip() + " "
+    return haiku.strip() + " "
 
-      # detect suitable tweets, annotate words with each words' number of syllables
-      n_syllables = []
-      clean_words = []
+  def detect_haikus(self, tweets):
+      if len(tweets)==0:
+        return []
+      print "detecting haikus..."
+      haikus = []
+      status_ids_so_far = []
+      for tweet in tweets:
+        h = self.detect_potential_haiku(tweet.text)
+        if h is not None:
+          if self.is_proper_haiku(h):
+            if tweet.id_str not in status_ids_so_far:
+              h_text = self.format_haiku(h)
+              print "HAIKU: ", h_text
+              haiku = {
+                "haiku_text": h_text,
+                "status_id": tweet.id_str,
+                "user": tweet.user.screen_name
+              }
 
-      for word in words:
+              status_ids_so_far.append(tweet.id_str)
+              haikus.append(haiku)
+
+      print "found %d haikus..." % len(haikus)
+      return haikus
+
+  def fetch_new_tweets(self):
+    if self.words is not None:
+      print "searching twitter for keywords..."
+      tweets = []
+      for page in range(1, self.n_words):
+        word = random.choice(self.words)
+        print "searchin for %s..." % word
         try:
-          n_syllable = self.number_of_syllables(word)[0]
-        except KeyError:
-          return None
-        if n_syllable > 7:
-          return None
+          tweet_list = self.twt_api.search(q=word, lang="en")
+        except tweepy.error.TweepError as e:
+          print e
         else:
-          n_syllables.append(n_syllable)
-          clean_words.append(word.strip().lower())
-
-      # remove tweekus that are really long
-      clean_tweet = ' '.join(clean_words)
-      if len(clean_tweet) > 125:
-        return None
-
-      # make sure tweets have the proper number of syllables
-      total_syllables = sum(n_syllables)
-      if total_syllables == 17:
-        return {"words" : clean_words, "syllables" : n_syllables }
-      else:
-        return None
-
-    def is_proper_haiku(self, haiku_dict):
-      words = haiku_dict['words']
-      syllables = haiku_dict['syllables']
-
-      # make sure lines break at 5 and 12
-      syllable_cum_sum = []
-      syllables_so_far = 0
-      for syllable in syllables:
-        syllables_so_far += syllable
-        syllable_cum_sum.append(syllables_so_far)
-      if 5 in syllable_cum_sum and 12 in syllable_cum_sum:
-        return True
-      else:
-        return False
-
-    def format_haiku(self, haiku_dict):
-      words = haiku_dict['words']
-      syllables = haiku_dict['syllables']
-      syllable_count = 0
-      haiku = ''
-      for i, word in enumerate(words):
-        if syllable_count == 5:
-          haiku += " / "
-        if syllable_count == 12:
-          haiku += " / "
-        syllable_count += syllables[i]
-        haiku += word.strip() + " "
-      return haiku.strip() + " "
-
-    def detect_haikus(self, tweets):
-        if len(tweets)==0:
-          return []
-        print "detecting haikus..."
-        haikus = []
-        status_ids_so_far = []
-        for tweet in tweets:
-          h = self.detect_potential_haiku(tweet.text)
-          if h is not None:
-            if self.is_proper_haiku(h):
-              if tweet.id_str not in status_ids_so_far:
-                h_text = self.format_haiku(h)
-                print "HAIKU: ", h_text
-                haiku = {
-                  "haiku_text": h_text,
-                  "status_id": tweet.id_str,
-                  "user": tweet.user.screen_name
-                }
-
-                status_ids_so_far.append(tweet.id_str)
-                haikus.append(haiku)
-
-        print "found %d haikus..." % len(haikus)
-        return haikus
-
-    def fetch_new_tweets(self):
-      if self.words is not None:
-        print "searching twitter for keywords..."
-        tweets = []
-        for page in range(1, self.n_words):
-          word = random.choice(self.words)
-          print "searchin for %s..." % word
-          try:
-            tweet_list = self.twt_api.search(q=word, lang="en")
-          except tweepy.error.TweepError as e:
-            print e
-          else:
-            tweets.extend(tweet_list)
-
-      elif self.twt_list_slug is not None and self.twt_list_owner is not None:
-        print "searching twitter list %s..." % self.twt_list_slug
-        tweets = []
-        for page in range(1,10):
-          tweet_list = self.twt_api.list_timeline(
-            owner_screen_name = self.twt_list_owner, 
-            slug =  self.twt_list_slug,
-            count = 200,
-            page = page
-          )
-
           tweets.extend(tweet_list)
 
-      else:
-        raise("YOU MUST INCLUDE A LIST OF WORDS OR A TWITTER LIST TO FOLLOW!")
-        return None
+    elif self.twt_list_slug is not None and self.twt_list_owner is not None:
+      print "searching twitter list %s..." % self.twt_list_slug
+      tweets = []
+      for page in range(1,10):
+        tweet_list = self.twt_api.list_timeline(
+          owner_screen_name = self.twt_list_owner, 
+          slug =  self.twt_list_slug,
+          count = 200,
+          page = page
+        )
 
-      return tweets
+        tweets.extend(tweet_list)
 
-    def post_tweets(self, haikus):
-      for h in haikus:
-        haiku = h['haiku_text']
-        user = "@%s" % h['user']
-        tweet = haiku + " - " + user
-        print "posting tweet - %s" % tweet
+    else:
+      raise("YOU MUST INCLUDE A LIST OF WORDS OR A TWITTER LIST TO FOLLOW!")
+      return None
+
+    return tweets
+
+  def post_tweets(self, haikus):
+    for h in haikus:
+      haiku = h['haiku_text']
+      user = "@%s" % h['user']
+      tweet = haiku + " - " + user
+      print "posting tweet - %s" % tweet
+      try:
+        self.twt_api.update_status(tweet)
+      except tweepy.TweepError:
+        continue
+
+  def format_tumble(self, haiku):
+      haiku_text = re.sub("\r\n", " <br></br> ", haiku['haiku_text'])
+      url = "http://twitter.com/%s/status/%s" % (haiku['user'], haiku['status_id'])
+      embdded_tweet = '''<p> <a href=%s target="_blank"> %s</a> </p>
+                         <br></br>
+                         <blockquote class="twitter-tweet"><p> <a href="%s"> original tweet </a></blockquote>
+                         <script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+                         ''' % (url, haiku_text, url)
+      return {
+        'body': embdded_tweet,
+        'url': url
+      }
+
+  def post_tumbles(self, haikus):
+    for h in haikus:
+      if h['status_id'] not in self.status_ids:
+        self.status_ids.append(h['status_id'])
+        tumbleku = self.format_tumble(h)
         try:
-          self.twt_api.update_status(tweet)
-        except tweepy.TweepError:
-          continue
+          print "posting tumble!"
+          self.tmbl_api.create_text(self.tmbl_blog, body=tumbleku['body'], format="html")
+        except Exception as e:
+          print e
+        time.sleep(2)
 
-    def format_tumble(self, haiku):
-        haiku_text = re.sub("\r\n", " <br></br> ", haiku['haiku_text'])
-        url = "http://twitter.com/%s/status/%s" % (haiku['user'], haiku['status_id'])
-        embdded_tweet = '''<p> <a href=%s target="_blank"> %s</a> </p>
-                           <br></br>
-                           <blockquote class="twitter-tweet"><p> <a href="%s"> original tweet </a></blockquote>
-                           <script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-                           ''' % (url, haiku_text, url)
-        return {
-          'body': embdded_tweet,
-          'url': url
-        }
+  
+  def post_to_meatspaces(self, haikus):
+    from selenium import webdriver
+    from selenium.webdriver.common.keys import Keys
 
-    def post_tumbles(self, haikus):
-      for h in haikus:
-        if h['status_id'] not in self.status_ids:
-          self.status_ids.append(h['status_id'])
-          tumbleku = self.format_tumble(h)
-          try:
-            print "posting tumble!"
-            self.tmbl_api.create_text(self.tmbl_blog, body=tumbleku['body'], format="html")
-          except Exception as e:
-            print e
-          time.sleep(2)
+    b = webdriver.Chrome()
+    b.get("http://chat.meatspac.es")
+    chat = b.find_element_by_id('add-chat')
+    hk = haikus[0]['haiku_text']
+    hk += " - @" + haikus[0]['user']
+    hk = re.sub("\r\n", " \ ", hk)
+    chat.send_keys(hk)
+    time.sleep(5)
+    chat.send_keys(Keys.RETURN)
 
-    
-    def post_to_meatspaces(self, haikus):
-      from selenium import webdriver
-      from selenium.webdriver.common.keys import Keys
+  def go(self):
 
-      b = webdriver.Chrome()
-      b.get("http://chat.meatspac.es")
-      chat = b.find_element_by_id('add-chat')
-      hk = haikus[0]['haiku_text']
-      hk += " - @" + haikus[0]['user']
-      chat.send_keys(hk)
-      time.sleep(5)
-      chat.send_keys(Keys.RETURN)
+    # find some tweets
+    tweets = self.fetch_new_tweets()
+    haikus = self.detect_haikus(tweets)
 
-    def go(self):
+    # if we find a haiku, post it on twitter and tumblr
+    if len(haikus)>0:
+      self.post_tweets(haikus)
+      self.post_tumbles(haikus)
+      if self.meats:
+        self.post_to_meatspaces(haikus)
 
-      # find some tweets
-      tweets = self.fetch_new_tweets()
-      haikus = self.detect_haikus(tweets)
-
-      # if we find a haiku, post it on twitter and tumblr
-      if len(haikus)>0:
-        self.post_tweets(haikus)
-        self.post_tumbles(haikus)
-        if self.meats:
-          self.post_to_meatspaces(haikus)
-
-        # write haiku status ids to file
-        with open(self.haiku_ids_file, "w") as f:
-          for i in set(self.status_ids):
-            f.write(str(i) + "\n")
+      # write haiku status ids to file
+      with open(self.haiku_ids_file, "w") as f:
+        for i in set(self.status_ids):
+          f.write(str(i) + "\n")
 
 if __name__ == '__main__':
     # list
-    hb = HaikuBot(
-      config = "../haikubot.yml"
-    )
+    # hb = HaikuBot(
+    #   config = "../haikubot.yml"
+    # )
     # # # words
     hb = HaikuBot(
       config = "../haikubot.yml",
-      words = nltk.corpus.stopwords.words('english'),
+      words = open('../profanity.txt').read().split("\n"),
       n_words = 50,
       meats = True
     )

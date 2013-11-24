@@ -7,3 +7,6 @@ haikubot/haiku-status-ids.txt
 .DS_Store
 */.DS_Store
 */*.pyc
+*/*.log
+*.log
+logs/
