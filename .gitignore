@@ -2,6 +2,7 @@ build/
 dist/
 haikubot.yml
 profanity.txt
+haikubot/haiku-status-ids.txt
 *.egg-info/
 .DS_Store
 */.DS_Store
